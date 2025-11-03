@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greedy Maze Solver</title>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+body {
+font-family: 'Arial', sans-serif;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 20px;
+color: #333;
+}
+
+.container {
+background: rgba(255, 255, 255, 0.95);
+border-radius: 20px;
+padding: 30px;
+box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+backdrop-filter: blur(10px);
+max-width: 1000px;
+width: 100%;
+}
+
+h1 {
+text-align: center;
+margin-bottom: 10px;
+color: #4a5568;
+font-size: 2.5rem;
+font-weight: 700;
+text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+text-align: center;
+margin-bottom: 20px;
+color: #718096;
+font-size: 1.1rem;
+}
+
+.maze-container {
+display: flex;
+justify-content: center;
+margin: 20px 0;
+}
+
+.maze-grid {
+display: inline-grid;
+gap: 1px;
+background: #2d3748;
+padding: 2px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cell {
+width: 25px;
+height: 25px;
+background: white;
+cursor: pointer;
+transition: all 0.2s ease;
+border: 1px solid #e2e8f0;
+}
+
+.cell:hover {
+transform: scale(1.1);
+z-index: 10;
+}
+
+.cell.wall {
+background: #2d3748;
+}
+
+.cell.start {
+background: #48bb78;
+}
+
+.cell.end {
+background: #f56565;
+}
+
+.cell.visited {
+background: #bee3f8;
+animation: visitedAnim 0.5s ease;
+}
+
+.cell.path {
+background: #fbd38d;
+animation: pathAnim 0.5s ease;
+}
+
+.cell.current {
+background: #9f7aea;
+animation: currentAnim 0.8s infinite;
+}
+
+@keyframes visitedAnim {
+0% {
+transform: scale(0.3);
+background: #e6fffa;
+}
+100% {
+transform: scale(1);
+background: #bee3f8;
+}
+}
+
+@keyframes pathAnim {
+0% {
+transform: scale(0.6);
+}
+100% {
+transform: scale(1);
+}
+}
+
+@keyframes currentAnim {
+0%, 100% {
+transform: scale(1);
+}
+50% {
+transform: scale(1.2);
+}
+}
+
+.controls {
+display: flex;
+gap: 10px;
+justify-content: center;
+flex-wrap: wrap;
+margin: 20px 0;
+}
+
+.btn {
+padding: 12px 24px;
+border: none;
+border-radius: 10px;
+font-size: 0.95rem;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+}
+
+.btn-primary {
+background: linear-gradient(45deg, #4299e1, #3182ce);
+color: white;
+box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+}
+
+.btn-primary:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6);
+}
+
+.btn-secondary {
+background: linear-gradient(45deg, #38b2ac, #319795);
+color: white;
+box-shadow: 0 4px 15px rgba(56, 178, 172, 0.4);
+}
+
+.btn-secondary:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(56, 178, 172, 0.6);
+}
+
+.btn-danger {
+background: linear-gradient(45deg, #e53e3e, #c53030);
+color: white;
+box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+}
+
+.btn-danger:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(229, 62, 62, 0.6);
+}
+
+.btn-small {
+padding: 8px 16px;
+font-size: 0.85rem;
+}
+
+.algorithm-selector {
+display: flex;
+gap: 10px;
+justify-content: center;
+margin: 15px 0;
+flex-wrap: wrap;
+}
+
+.algo-btn {
+padding: 10px 20px;
+border: 2px solid #805ad5;
+background: white;
+color: #805ad5;
+border-radius: 8px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+
+.algo-btn.active {
+background: linear-gradient(45deg, #805ad5, #6b46c1);
+color: white;
+}
+
+.algo-btn:hover {
+transform: translateY(-2px);
+}
+
+.stats {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+gap: 15px;
+margin: 20px 0;
+}
+
+.stat-card {
+background: linear-gradient(45deg, #f7fafc, #edf2f7);
+padding: 15px;
+border-radius: 10px;
+text-align: center;
+box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+font-size: 1.5rem;
+font-weight: 700;
+color: #4299e1;
+}
+
+.stat-label {
+font-size: 0.8rem;
+color: #718096;
+margin-top: 5px;
+}
+
+.status {
+text-align: center;
+margin: 20px 0;
+padding: 15px;
+border-radius: 10px;
+font-weight: 600;
+font-size: 1rem;
+background: linear-gradient(45deg, #f7fafc, #edf2f7);
+color: #4a5568;
+}
+
+.status.solving {
+background: linear-gradient(45deg, #fed7d7, #feb2b2);
+color: #c53030;
+animation: statusPulse 2s infinite;
+}
+
+.status.solved {
+background: linear-gradient(45deg, #c6f6d5, #9ae6b4);
+color: #2f855a;
+}
+
+@keyframes statusPulse {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.7; }
+}
+
+.legend {
+display: flex;
+justify-content: center;
+gap: 20px;
+margin: 15px 0;
+flex-wrap: wrap;
+}
+
+.legend-item {
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 0.9rem;
+color: #4a5568;
+}
+
+.legend-box {
+width: 20px;
+height: 20px;
+border-radius: 4px;
+border: 1px solid #cbd5e0;
+}
+
+.speed-control {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+margin: 15px 0;
+}
+
+.speed-control label {
+font-weight: 600;
+color: #4a5568;
+}
+
+.speed-control input {
+width: 200px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🧩 Maze Solver</h1>
+<p class="subtitle">Powered by Greedy & Pathfinding Algorithms</p>
+
+<div class="algorithm-selector">
+<button class="algo-btn active" data-algo="greedy">Greedy Best-First</button>
+<button class="algo-btn" data-algo="astar">A* Algorithm</button>
+<button class="algo-btn" data-algo="dijkstra">Dijkstra's</button>
+<button class="algo-btn" data-algo="bfs">BFS</button>
+</div>
+
+<div class="speed-control">
+<label>Speed:</label>
+<input type="range" id="speedSlider" min="1" max="100" value="50">
+<span id="speedValue">50ms</span>
+</div>
+
+<div class="stats">
+<div class="stat-card">
+<div class="stat-value" id="pathLength">0</div>
+<div class="stat-label">Path Length</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="nodesVisited">0</div>
+<div class="stat-label">Nodes Visited</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="timeElapsed">0ms</div>
+<div class="stat-label">Time</div>
+</div>
+</div>
+
+<div class="status" id="status">Click on grid to draw walls. Set start (green) and end (red) points.</div>
+
+<div class="maze-container">
+<div class="maze-grid" id="mazeGrid"></div>
+</div>
+
+<div class="legend">
+<div class="legend-item">
+<div class="legend-box" style="background: #48bb78;"></div>
+<span>Start</span>
+</div>
+<div class="legend-item">
+<div class="legend-box" style="background: #f56565;"></div>
+<span>End</span>
+</div>
+<div class="legend-item">
+<div class="legend-box" style="background: #2d3748;"></div>
+<span>Wall</span>
+</div>
+<div class="legend-item">
+<div class="legend-box" style="background: #bee3f8;"></div>
+<span>Visited</span>
+</div>
+<div class="legend-item">
+<div class="legend-box" style="background: #fbd38d;"></div>
+<span>Path</span>
+</div>
+</div>
+
+<div class="controls">
+<button class="btn btn-primary" onclick="solveMaze()">🚀 Solve</button>
+<button class="btn btn-secondary" onclick="clearPath()">🔄 Clear Path</button>
+<button class="btn btn-secondary" onclick="clearMaze()">🗑️ Clear All</button>
+<button class="btn btn-danger" onclick="stopSolving()">⏹️ Stop</button>
+</div>
+
+<div class="controls">
+<button class="btn btn-secondary btn-small" onclick="generateMaze()">🎲 Random Maze</button>
+<button class="btn btn-secondary btn-small" onclick="loadPattern(0)">Pattern 1</button>
+<button class="btn btn-secondary btn-small" onclick="loadPattern(1)">Pattern 2</button>
+<button class="btn btn-secondary btn-small" onclick="loadPattern(2)">Pattern 3</button>
+</div>
+</div>
+
+<script>
+const ROWS = 25;
+const COLS = 35;
+let grid = [];
+let startCell = null;
+let endCell = null;
+let isDrawing = false;
+let isErasing = false;
+let solving = false;
+let selectedAlgorithm = 'greedy';
+let speed = 50;
+
+class Cell {
+constructor(row, col) {
+this.row = row;
+this.col = col;
+this.isWall = false;
+this.isStart = false;
+this.isEnd = false;
+this.isVisited = false;
+this.isPath = false;
+this.distance = Infinity;
+this.heuristic = 0;
+this.parent = null;
+this.element = null;
+}
+
+reset() {
+this.isVisited = false;
+this.isPath = false;
+this.distance = Infinity;
+this.heuristic = 0;
+this.parent = null;
+this.updateDisplay();
+}
+
+updateDisplay() {
+if (!this.element) return;
+this.element.className = 'cell';
+if (this.isWall) this.element.classList.add('wall');
+else if (this.isStart) this.element.classList.add('start');
+else if (this.isEnd) this.element.classList.add('end');
+else if (this.isPath) this.element.classList.add('path');
+else if (this.isVisited) this.element.classList.add('visited');
+}
+}
+
+function initializeGrid() {
+const gridElement = document.getElementById('mazeGrid');
+gridElement.innerHTML = '';
+gridElement.style.gridTemplateColumns = `repeat(${COLS}, 25px)`;
+grid = [];
+
+for (let i = 0; i < ROWS; i++) {
+grid[i] = [];
+for (let j = 0; j < COLS; j++) {
+const cell = new Cell(i, j);
+const cellElement = document.createElement('div');
+cellElement.className = 'cell';
+cellElement.dataset.row = i;
+cellElement.dataset.col = j;
+cell.element = cellElement;
+grid[i][j] = cell;
+
+cellElement.addEventListener('mousedown', (e) => handleMouseDown(e, cell));
+cellElement.addEventListener('mouseenter', () => handleMouseEnter(cell));
+cellElement.addEventListener('mouseup', handleMouseUp);
+
+gridElement.appendChild(cellElement);
+}
+}
+
+document.addEventListener('mouseup', handleMouseUp);
+setDefaultPoints();
+}
+
+function setDefaultPoints() {
+startCell = grid[12][5];
+startCell.isStart = true;
+startCell.updateDisplay();
+
+endCell = grid[12][30];
+endCell.isEnd = true;
+endCell.updateDisplay();
+}
+
+function handleMouseDown(e, cell) {
+if (solving) return;
+e.preventDefault();
+isDrawing = true;
+
+if (e.shiftKey && !cell.isEnd) {
+if (startCell) startCell.isStart = false;
+startCell = cell;
+cell.isStart = true;
+cell.isWall = false;
+cell.isEnd = false;
+updateGrid();
+} else if (e.ctrlKey && !cell.isStart) {
+if (endCell) endCell.isEnd = false;
+endCell = cell;
+cell.isEnd = true;
+cell.isWall = false;
+cell.isStart = false;
+updateGrid();
+} else if (!cell.isStart && !cell.isEnd) {
+isErasing = cell.isWall;
+cell.isWall = !isErasing;
+cell.updateDisplay();
+}
+}
+
+function handleMouseEnter(cell) {
+if (!isDrawing || solving || cell.isStart || cell.isEnd) return;
+cell.isWall = !isErasing;
+cell.updateDisplay();
+}
+
+function handleMouseUp() {
+isDrawing = false;
+}
+
+function updateGrid() {
+for (let i = 0; i < ROWS; i++) {
+for (let j = 0; j < COLS; j++) {
+grid[i][j].updateDisplay();
+}
+}
+}
+
+function clearPath() {
+for (let i = 0; i < ROWS; i++) {
+for (let j = 0; j < COLS; j++) {
+grid[i][j].reset();
+}
+}
+updateStats(0, 0, 0);
+updateStatus('Path cleared. Ready to solve!');
+}
+
+function clearMaze() {
+for (let i = 0; i < ROWS; i++) {
+for (let j = 0; j < COLS; j++) {
+grid[i][j].isWall = false;
+grid[i][j].reset();
+}
+}
+setDefaultPoints();
+updateStats(0, 0, 0);
+updateStatus('Maze cleared. Click to draw walls.');
+}
+
+function getNeighbors(cell) {
+const neighbors = [];
+const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+for (const [dx, dy] of directions) {
+const newRow = cell.row + dx;
+const newCol = cell.col + dy;
+if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+const neighbor = grid[newRow][newCol];
+if (!neighbor.isWall) {
+neighbors.push(neighbor);
+}
+}
+}
+return neighbors;
+}
+
+function heuristic(cell1, cell2) {
+return Math.abs(cell1.row - cell2.row) + Math.abs(cell1.col - cell2.col);
+}
+
+async function greedyBestFirst() {
+const openSet = [startCell];
+startCell.distance = 0;
+startCell.heuristic = heuristic(startCell, endCell);
+
+while (openSet.length > 0 && solving) {
+openSet.sort((a, b) => a.heuristic - b.heuristic);
+const current = openSet.shift();
+
+if (current === endCell) {
+return true;
+}
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.add('current');
+}
+
+current.isVisited = true;
+await sleep(speed);
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.remove('current');
+current.updateDisplay();
+}
+
+const neighbors = getNeighbors(current);
+for (const neighbor of neighbors) {
+if (!neighbor.isVisited && !openSet.includes(neighbor)) {
+neighbor.parent = current;
+neighbor.heuristic = heuristic(neighbor, endCell);
+openSet.push(neighbor);
+}
+}
+}
+return false;
+}
+
+async function astar() {
+const openSet = [startCell];
+startCell.distance = 0;
+startCell.heuristic = heuristic(startCell, endCell);
+
+while (openSet.length > 0 && solving) {
+openSet.sort((a, b) => (a.distance + a.heuristic) - (b.distance + b.heuristic));
+const current = openSet.shift();
+
+if (current === endCell) {
+return true;
+}
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.add('current');
+}
+
+current.isVisited = true;
+await sleep(speed);
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.remove('current');
+current.updateDisplay();
+}
+
+const neighbors = getNeighbors(current);
+for (const neighbor of neighbors) {
+const tentativeDistance = current.distance + 1;
+if (tentativeDistance < neighbor.distance) {
+neighbor.parent = current;
+neighbor.distance = tentativeDistance;
+neighbor.heuristic = heuristic(neighbor, endCell);
+if (!openSet.includes(neighbor)) {
+openSet.push(neighbor);
+}
+}
+}
+}
+return false;
+}
+
+async function dijkstra() {
+const unvisited = [];
+for (let i = 0; i < ROWS; i++) {
+for (let j = 0; j < COLS; j++) {
+if (!grid[i][j].isWall) {
+unvisited.push(grid[i][j]);
+}
+}
+}
+startCell.distance = 0;
+
+while (unvisited.length > 0 && solving) {
+unvisited.sort((a, b) => a.distance - b.distance);
+const current = unvisited.shift();
+
+if (current.distance === Infinity) break;
+if (current === endCell) return true;
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.add('current');
+}
+
+current.isVisited = true;
+await sleep(speed);
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.remove('current');
+current.updateDisplay();
+}
+
+const neighbors = getNeighbors(current);
+for (const neighbor of neighbors) {
+if (!neighbor.isVisited) {
+const tentativeDistance = current.distance + 1;
+if (tentativeDistance < neighbor.distance) {
+neighbor.distance = tentativeDistance;
+neighbor.parent = current;
+}
+}
+}
+}
+return false;
+}
+
+async function bfs() {
+const queue = [startCell];
+startCell.isVisited = true;
+
+while (queue.length > 0 && solving) {
+const current = queue.shift();
+
+if (current === endCell) {
+return true;
+}
+
+if (!current.isStart && !current.isEnd) {
+current.element.classList.add('current');
+await sleep(speed);
+current.element.classList.remove('current');
+current.updateDisplay();
+}
+
+const neighbors = getNeighbors(current);
+for (const neighbor of neighbors) {
+if (!neighbor.isVisited) {
+neighbor.isVisited = true;
+neighbor.parent = current;
+queue.push(neighbor);
+}
+}
+}
+return false;
+}
+
+async function reconstructPath() {
+let current = endCell;
+let pathLength = 0;
+
+while (current && current !== startCell) {
+if (!current.isEnd) {
+current.isPath = true;
+current.updateDisplay();
+await sleep(speed / 2);
+}
+current = current.parent;
+pathLength++;
+}
+return pathLength;
+}
+
+function countVisited() {
+let count = 0;
+for (let i = 0; i < ROWS; i++) {
+for (let j = 0; j < COLS; j++) {
+if (grid[i][j].isVisited) count++;
+}
+}
+return count;
+}
+
+async function solveMaze() {
+if (solving) return;
+if (!startCell || !endCell) {
+updateStatus('Please set start and end points!');
+return;
+}
+
+solving = true;
+clearPath();
+const startTime = Date.now();
+updateStatus('Solving maze...', 'solving');
+
+let found = false;
+switch (selectedAlgorithm) {
+case 'greedy':
+found = await greedyBestFirst();
+break;
+case 'astar':
+found = await astar();
+break;
+case 'dijkstra':
+found = await dijkstra();
+break;
+case 'bfs':
+found = await bfs();
+break;
+}
+
+if (found && solving) {
+const pathLength = await reconstructPath();
+const visited = countVisited();
+const elapsed = Date.now() - startTime;
+updateStats(pathLength, visited, elapsed);
+updateStatus('🎉 Path found successfully!', 'solved');
+} else if (solving) {
+const visited = countVisited();
+const elapsed = Date.now() - startTime;
+updateStats(0, visited, elapsed);
+updateStatus('❌ No path found!');
+} else {
+updateStatus('Solving stopped.');
+}
+
+solving = false;
+}
+
+function stopSolving() {
+solving = false;
+updateStatus('Solving stopped.');
+}
+
+function sleep(ms) {
+return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function updateStats(pathLength, visited, time) {
+document.getElementById('pathLength').textContent = pathLength;
+document.getElementById('nodesVisited').textContent = visited;
+document.getElementById('timeElapsed').textContent = time + 'ms';
+}
+
+function updateStatus(message, type = '') {
+const status = document.getElementById('status');
+status.textContent = message;
+status.className = 'status' + (type ? ' ' + type : '');
+}
+
+function generateMaze() {
+clearMaze();
+for (let i = 0; i < ROWS; i++) {
+for (let j = 0; j < COLS; j++) {
+if (grid[i][j] !== startCell && grid[i][j] !== endCell) {
+if (Math.random() < 0.3) {
+grid[i][j].isWall = true;
+grid[i][j].updateDisplay();
+}
+}
+}
+}
+updateStatus('Random maze generated!');
+}
+
+window.loadPattern = function(index) {
+clearMaze();
+if (index === 0) {
+for (let i = 5; i < ROWS - 5; i++) {
+grid[i][15].isWall = true;
+if (i % 3 !== 0) grid[i][25].isWall = true;
+}
+} else if (index === 1) {
+for (let j = 5; j < COLS - 5; j++) {
+if (j % 4 !== 0) {
+grid[8][j].isWall = true;
+grid[16][j].isWall = true;
+}
+}
+} else if (index === 2) {
+for (let i = 0; i < ROWS; i += 3) {
+for (let j = 0; j < COLS; j += 3) {
+if (grid[i][j] !== startCell && grid[i][j] !== endCell) {
+grid[i][j].isWall = true;
+}
+}
+}
+}
+updateGrid();
+updateStatus('Pattern loaded!');
+};
+
+document.querySelectorAll('.algo-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+selectedAlgorithm = btn.dataset.algo;
+updateStatus(`Algorithm changed to: ${btn.textContent}`);
+});
+});
+
+document.getElementById('speedSlider').addEventListener('input', (e) => {
+speed = 101 - e.target.value;
+document.getElementById('speedValue').textContent = speed + 'ms';
+});
+
+initializeGrid();
+updateStatus('Hold Shift+Click to set START, Ctrl+Click to set END, Click to draw walls');
+</script>
+</body>
+</html>
